@@ -32,7 +32,8 @@ class AlertMachine
       # Make sure the process keeps running. machines can be one or many.
       # 
       # == Options:
-      # One or more of the below constraints.
+      # One or more of the below constraints. Any of the below can either
+      # be a single element or an array. (eg. multiple ports)
       #
       # * port: 
       #     Ensure the port is open.

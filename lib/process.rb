@@ -10,9 +10,9 @@ class AlertMachine
           raise ArgumentError, "Must not be passed a block" if block_given?
 
         super(opts, caller) do
-          check_port(machines, opts[:port], caller) if opts[:port]
-          check_pid_file(machines, opts[:pid_file], caller) if opts[:pid_file]
-          check_grep(machines, opts[:grep], caller) if opts[:grep]
+          check(:port, machines, opts, caller)
+          check(:pid_file, machines, opts, caller)
+          check(:grep, machines, opts, caller)
         end
       end
 
@@ -53,6 +53,12 @@ class AlertMachine
 
       def check_command_failed(machines, error_msg, caller)
         assert false, error_msg % machines.join(", "), caller
+      end
+
+      def check(entity, machines, opts, caller)
+        [opts[entity]].flatten.each { |val|
+          Process.send("check_#{entity}".to_sym, machines, val, caller)
+        } if opts[entity]
       end
 
       private
