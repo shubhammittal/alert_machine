@@ -1,10 +1,6 @@
 require File.expand_path(File.dirname(__FILE__) + '/helper.rb')
 
-class WatcherTest < Test::Unit::TestCase
-
-  def setup
-    AlertMachine.reset
-  end
+class WatcherTest < AlertMachineTestHelper
 
   def test_no_alerts_triggerred
     watcher {}
@@ -31,23 +27,5 @@ class WatcherTest < Test::Unit::TestCase
     AlertMachine::RunTask.any_instance.expects(:mail)
     run_machine
   end
-
-  def watcher(opts = {})
-    Class.new(AlertMachine::Watcher) do
-      watch opts.merge(:interval => 0.05) do
-        yield
-      end
-    end
-  end
   
-  def run_machine
-    AlertMachine.disable(false)
-    AlertMachine.at_exit {
-      EM::Timer.new(0.1) do
-        EM::stop_event_loop
-      end
-    }
-  ensure
-    AlertMachine.disable
-  end
 end

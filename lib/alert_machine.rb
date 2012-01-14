@@ -2,7 +2,8 @@ require 'eventmachine'
 require 'action_mailer'
 
 class AlertMachine
-
+  CONFIG_FILE = 'config/alert_machine.yml'
+  
   class Watcher
       # == Options:
       #     The below options can also be overridden via config/alert_machine.yml
@@ -18,150 +19,60 @@ class AlertMachine
       #     to whatever was specified in the config file.
       #
       # * retries:
-      #     Number of times to try before alerting on error. Defaults to 3.
+      #     Number of times to try before alerting on error. Defaults to 1.
       #
-      def self.watch(opts, &block)
+      def self.watch(opts = {}, caller = caller, &block)
         AlertMachine.tasks << RunTask.new(opts, block, caller)
       end
 
-      def self.assert(conditions, msg = nil)
+      def self.assert(conditions, msg = nil, caller = caller)
         AlertMachine.current_task.assert(conditions, msg, caller)
       end
-  end
 
-  # A single watch and it's life cycle.
-  class RunTask
-    def initialize(opts, block, caller)
-      @opts, @block, @caller = opts, block, caller
-      @errors = []
-      @alert_state = false
-    end
-
-    def schedule
-      @timer = EM::PeriodicTimer.new(interval) do
-        with_task do
-          start = Time.now
-          begin
-            # The main call to the user-defined watcher function.
-            @block.call(*@opts[:args])
-            
-            assert(Time.now - start < interval / 5.0,
-              "Task ran for too long. Invoked every #{
-              interval}s. Ran for #{Time.now - start}s.", @caller)
-
-            # Things finished successfully.
-            @timer.interval = interval if !@errors.empty?
-            @errors = []
-            
-            alert_state(false)
-
-          rescue AssertionFailure => af
-            
-            @timer.interval = interval_error if @errors.empty?
-            @errors << af
-
-            alert_state(true) if @errors.length > retries
-          end
-        end
+      # Make sure the process keeps running. machines can be one or many.
+      # 
+      # == Options:
+      # One or more of the below constraints.
+      #
+      # * port: 
+      #     Ensure the port is open.
+      #     
+      # * pid_file:
+      #     Make sure the pid file exists and the process corresponding to it,
+      #     is alive.
+      #
+      # * grep:
+      #     Executes `ps aux | grep <string>` to ensure process is running.
+      #
+      # Other usual options of watcher, mentioned above.
+      #
+      def self.watch_process(machines, opts = {})
+        machines = [machines].flatten
+        Process.watch(machines, opts, caller)
       end
-    end
 
-    def with_task
-      AlertMachine.current_task = self
-      yield
-    ensure
-      AlertMachine.current_task = nil
-    end
-
-    def assert(condition, msg, caller)
-      return if condition
-      assert_failed(msg, caller)
-    end
-
-    def assert_failed(msg, caller)
-      fail = AssertionFailure.new(msg, caller)
-      puts fail.log
-      raise fail
-    end
-
-    # Is the alert firing?
-    def alert_state(firing)
-      if firing != @alert_state
-        mail unless @last_mailed && @last_mailed > Time.now - 60*10
-        @last_mailed = Time.now
-      end
-      @alert_state = firing
-    end
-
-    def mail
-      last = @errors[-1]
-      ActionMailer::Base.mail(
-        :from => opts(:from),
-        :to => opts(:to),
-        :subject => "AlertMachine Failed: #{last.msg || last.parsed_caller.file_line}"
-      ) do |format|
-        format.text {
-          render :text =>
-            @errors.collect {|e| e.log}.join("\n=============\n")
+      # Run a command on a set of machines.
+      def self.run_command(machines, cmd)
+        machines = [machines].flatten
+        require 'rye'
+        set = Rye::Set.new(machines.join(","), :parallel => true)
+        machines.each { |m| set.add_box(Rye::Box.new(m, AlertMachine.ssh_config.merge(:safe => false))) }
+        puts "executing on #{machines}: #{cmd}"
+        res = set.execute(cmd).group_by {|ry| ry.box.hostname }.sort_by {|name, op| machines.index(name) }
+        res.each { |machine, op|
+          puts "[#{machine}]\n#{op.join("\n")}\n"
         }
-      end.deliver
-    end
-
-    def opts(key, defaults = nil)
-      @opts[key] || config[key.to_s] || defaults || block_given? && yield
-    end
-
-    def interval
-      opts(:interval, 5 * 60).to_f
-    end
-
-    def interval_error
-      opts(:interval_error) { interval / 5.0 }.to_f
-    end
-
-    def retries
-      opts(:retries, 3).to_i
-    end
-
-    def config
-      self.class.config
-    end
-
-    @@config = nil
-    def self.config
-      @@config ||= YAML::load(File.open('config/alert_machine.yml'))
-    rescue
-      {}
-    end
-
-    # When an assertion fails, this exception is thrown so that
-    # we can unwind the stack frame. It's also deliberately throwing
-    # something that's not derived from Exception.
-    class AssertionFailure < Exception
-      attr_reader :msg, :caller, :time
-      def initialize(msg, caller)
-        @msg, @caller, @time = msg, caller, Time.now
-        super(@msg)
       end
 
-      def log
-        "[#{Time.now}] #{msg ? msg + "\n" : ""}" +
-          "#{Caller.new(caller).log}"
+      private
+      # To suppress logging in test mode.
+      def puts(*args)
+        super unless AlertMachine.test_mode?
       end
-      
-      def parsed_caller
-        Caller.new(caller)
-      end
-    end
   end
 
-  def self.disable(disabled = true)
-    @@em_invoked = disabled
-  end
-
-  # The main entry point called when the ruby is about to finish.
-  # Isn't this cool :) Inspiration from Test::Unit.
-  def self.at_exit
+  # Invoke this whenever you are ready to enter the AlertMachine loop.
+  def self.run
     unless @@em_invoked
       @@em_invoked = true
       EM::run do
@@ -171,6 +82,26 @@ class AlertMachine
         yield if block_given?
       end
     end
+  end
+
+
+  @@config = nil
+  def self.config
+    @@config ||= YAML::load(File.open(CONFIG_FILE))
+  rescue
+    {}
+  end
+
+  def self.ssh_config
+    res = {}
+    config['ssh'].each_pair do |k, v|
+      res[k.to_sym] = v
+    end
+    return res
+  end
+
+  def self.disable(disabled = true)
+    @@em_invoked = disabled
   end
 
   # Figures out how to parse the call stack and pretty print it.
@@ -221,9 +152,23 @@ class AlertMachine
   def self.reset
     @@tasks = []
   end
+
+  private
+  def puts(*args)
+    super unless AlertMachine.test_mode?
+  end
   
+  # Tests set this to true sometimes.
+  def self.dont_check_long_processes
+    false
+  end
+
+  def self.test_mode?
+    false
+  end
 end
 
-at_exit do
-  AlertMachine.at_exit
-end
+dname = File.dirname(__FILE__)
+require "#{dname}/rails.rb"
+require "#{dname}/process.rb"
+require "#{dname}/run_task.rb"
