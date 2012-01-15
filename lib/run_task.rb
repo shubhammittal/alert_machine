@@ -18,7 +18,7 @@ class AlertMachine
             assert(Time.now - start < interval / 5.0,
               "Task ran for too long. Invoked every #{
               interval}s. Ran for #{Time.now - start}s.", @caller) unless
-              AlertMachine.dont_check_long_processes
+              dont_check_long_processes?
 
             # Things finished successfully.
             @timer.interval = interval if !@errors.empty?
@@ -88,6 +88,8 @@ class AlertMachine
     def interval_error; opts(:interval_error) { interval / 5.0 }.to_f; end
 
     def retries; opts(:retries, 1).to_i; end
+
+    def dont_check_long_processes?; opts(:dont_check_long_processes, false).to_s == "true"; end
 
     def config; AlertMachine.config; end
 

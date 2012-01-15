@@ -24,7 +24,7 @@ class WatcherTest < AlertMachineTestHelper
   def test_alert_fires_after_retries
     cnt = 0
     watcher(:retries => 1) { AlertMachine::Watcher.assert false if (cnt += 1) <= 2 }
-    AlertMachine::RunTask.any_instance.expects(:mail)
+    AlertMachine::RunTask.any_instance.expects(:mail).at_least_once
     run_machine
   end
   

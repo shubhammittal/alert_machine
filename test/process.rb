@@ -3,8 +3,7 @@ require File.expand_path(File.dirname(__FILE__) + '/helper.rb')
 class ProcessTest < AlertMachineTestHelper
 
   def setup
-    super
-    AlertMachine.expects(:dont_check_long_processes).returns(true).at_least(0)
+    super(true)
   end
   
   def test_port_open_failuire
@@ -36,7 +35,7 @@ class ProcessTest < AlertMachineTestHelper
     File.open("/tmp/pid_x", "w") {|fh| fh.write "#{Process.pid}" }
     run_machine
   end
-  
+
   def test_grep_failuire
     process_watcher(:grep => "test/stupid.rb")
     AlertMachine::RunTask.any_instance.expects(:assert_failed).at_least_once
@@ -44,7 +43,7 @@ class ProcessTest < AlertMachineTestHelper
   end
 
   def test_grep_success
-    process_watcher(:grep => "test/process.rb")
+    process_watcher(:grep => "test/process.rb\\|test/all.rb")
     AlertMachine::RunTask.any_instance.expects(:assert_failed).never
     File.open("/tmp/pid_x", "w") {|fh| fh.write "#{Process.pid}" }
     run_machine

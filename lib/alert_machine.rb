@@ -19,6 +19,9 @@ class AlertMachine
       #
       # * retries:
       #     Number of times to try before alerting on error. Defaults to 1.
+      #     
+      # * dont_check_long_processes:
+      #     Don't assert if my watch took too long to run. [false defaults]
       #
       def self.watch(opts = {}, caller = caller, &block)
         AlertMachine.tasks << RunTask.new(opts, block, caller)
@@ -159,11 +162,6 @@ class AlertMachine
     super unless AlertMachine.test_mode?
   end
   
-  # Tests set this to true sometimes.
-  def self.dont_check_long_processes
-    false
-  end
-
   def self.test_mode?
     false
   end

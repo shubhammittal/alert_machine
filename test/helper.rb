@@ -6,10 +6,11 @@ require File.dirname(__FILE__) + '/../lib/alert_machine.rb'
 AlertMachine.disable
 
 class AlertMachineTestHelper < Test::Unit::TestCase
-  def setup
+  def setup(runs_long = false)
     AlertMachine.reset
     AlertMachine.expects(:config).returns(
       {
+        'dont_check_long_processes' => runs_long ? "true" : "false",
         'ssh' => {
         }
       }
