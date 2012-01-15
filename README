@@ -26,6 +26,9 @@ class MyWatcher < AlertMachine::Watcher
         #{new_crashes.length} new crashes found.
         #{ new_crashes.collect {|c| c.print }.join("\n") }
 MAIL
+    # The above code asserts that new_crashes is empty. If it's not empty
+    # an alert is triggerred with the message contents being the string
+    # that follows the assert.
     end
 end
 
