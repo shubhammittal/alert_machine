@@ -5,6 +5,9 @@ all processes are running, ports are open. You can also add checks for bad event
 that get run once every few minutes and get error reports to your email.
 
 == Usage
+0. Install:
+
+gem install alert_machine
 
 1. Defining a Watcher class:
 
