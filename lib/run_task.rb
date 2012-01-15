@@ -26,11 +26,12 @@ class AlertMachine
 
             alert_state(false)
 
-          rescue Exception => e
-            puts "Exception: #{e.to_s}"
-            puts "#{e.backtrace.join("\n")}"
-
-            af = e.is_a?(AssertionFailure) ? e : AssertionFailure.new(e.to_s, e.backtrace)
+          rescue Exception => af
+            unless af.is_a?(AssertionFailure)
+              puts "Task Exception: #{af.to_s}"
+              puts "#{af.backtrace.join("\n")}"
+              af = AssertionFailure.new(af.to_s, af.backtrace)
+            end
 
             @timer.interval = interval_error if @errors.empty?
             @errors << af

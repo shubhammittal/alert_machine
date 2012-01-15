@@ -18,7 +18,7 @@ class AlertMachine
 
       def check_port(machines, port, caller)
         check_command(machines, 
-          "netstat -na | grep 'LISTEN' | grep '\(\:\|\.\)#{port} ' | grep -v grep",
+          "netstat -na | grep 'LISTEN' | grep '\\(\\:\\|\\.\\)#{port} ' | grep -v grep",
           "Checking if port #{port} is open on %s",
           "Port #{port} seems down on %s", caller)
       end
