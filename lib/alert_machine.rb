@@ -2,7 +2,6 @@ require 'eventmachine'
 require 'action_mailer'
 
 class AlertMachine
-  CONFIG_FILE = 'config/alert_machine.yml'
   
   class Watcher
       # == Options:
@@ -72,6 +71,15 @@ class AlertMachine
       end
   end
 
+  # Configure your machine before running it.
+  CONFIG_FILE = 'config/alert_machine.yml'
+  @@config = nil
+  def self.config(config_file = CONFIG_FILE)
+    @@config ||= YAML::load(File.open(config_file))
+  rescue
+    {}
+  end
+
   # Invoke this whenever you are ready to enter the AlertMachine loop.
   def self.run
     unless @@em_invoked
@@ -83,14 +91,6 @@ class AlertMachine
         yield if block_given?
       end
     end
-  end
-
-
-  @@config = nil
-  def self.config
-    @@config ||= YAML::load(File.open(CONFIG_FILE))
-  rescue
-    {}
   end
 
   def self.ssh_config

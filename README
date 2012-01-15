@@ -1,1 +1,62 @@
-The ruby way of managing alerts and monitoring server events.
+= AlertMachine
+
+Get notifications if bad things happen to your server. You can easily make sure
+all processes are running, ports are open. You can also add checks for bad events
+that get run once every few minutes and get error reports to your email.
+
+== Usage
+
+1. Defining a Watcher class:
+
+class MyWatcher < AlertMachine::Watcher
+
+    # Example 1: Make sure port 80 is running on server1 and server2.
+    watch_process(["server1.example.com", "server2.com"], :port => 80)
+
+    # Example 2: Make sure the two thin servers are running in server1.
+    # Check if the two ports are open, and check if the two pid files are present
+    # and pointing to valid processes.
+    watch_process("server1.example.com", :port => [3000, 3001], :pid_file =>
+        ["/tmp/thin.3000.pid", "/tmp/thin.3001.pid"])
+
+    # Example 3: We can also make sure there are no new crashes.
+    watch(:retries => 0) do
+        new_crashes = Crash.where(unread: false).all
+        assert new_crashes.empty?, <<MAIL
+        #{new_crashes.length} new crashes found.
+        #{ new_crashes.collect {|c| c.print }.join("\n") }
+MAIL
+    end
+end
+
+2. Running the watcher class:
+
+File: my_watcher_runner.rb
+require 'alert_machine'
+
+# The below line safely loads the rails environment sending out alerts
+# incase things are broken.
+AlertMachine::RailsEnvironment.bootup
+
+# Require your alert files.
+require "offline/alerts/my_watcher1.rb"
+require "offline/alerts/my_watcher2.rb"
+
+# Run the machine.
+AlertMachine.run
+
+== Configuration
+
+If you want to change the default settings, you can call:
+
+AlertMachine.config("config_file_path")
+
+before the `AlertMachine.run`
+
+You can also easily pass diff config files for development and production, if
+you are using rails.
+
+A list of all config options are available at AlertMachine::Watcher#watch and
+AlertMachine::Watcher#watch_process
+
+
