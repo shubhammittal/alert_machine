@@ -1,10 +1,9 @@
 # -*- encoding: utf-8 -*-
 $:.push File.expand_path("../lib", __FILE__)
-require File.dirname(__FILE__) + '/version.rb'
 
 Gem::Specification.new do |s|
   s.name        = "alert_machine"
-  s.version     = AlertMachine::VERSION
+  s.version     = "0.0.1"
   s.authors     = ["prasanna"]
   s.email       = ["myprasanna@gmail.com"]
   s.homepage    = "http://github.com/likealittle/alert_machine"

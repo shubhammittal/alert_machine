@@ -129,7 +129,7 @@ class AlertMachine
       File.open(file) {|fh|
         fh.readlines[line.to_i - 1..line.to_i + 3].collect {|l|
           ">> #{l}"
-        }.join + "---\n"
+        }.join + "\n---\n"
       } if file && File.exists?(file)
     end
   end
@@ -170,6 +170,6 @@ class AlertMachine
 end
 
 dname = File.dirname(__FILE__)
-require "#{dname}/rails.rb"
 require "#{dname}/process.rb"
 require "#{dname}/run_task.rb"
+require "#{dname}/rails_environment.rb"
