@@ -60,10 +60,10 @@ class AlertMachine
         require 'rye'
         set = Rye::Set.new(machines.join(","), :parallel => true)
         machines.each { |m| set.add_box(Rye::Box.new(m, AlertMachine.ssh_config.merge(:safe => false))) }
-        puts "executing on #{machines}: #{cmd}"
+        puts "[#{Time.now}] executing on #{machines}: #{cmd}"
         res = set.execute(cmd).group_by {|ry| ry.box.hostname }.sort_by {|name, op| machines.index(name) }
         res.each { |machine, op|
-          puts "[#{machine}]\n#{op.join("\n")}\n"
+          puts "[#{Time.now}] [#{machine}]\n#{op.join("\n")}\n"
         }
       end
 
