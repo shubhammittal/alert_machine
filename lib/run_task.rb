@@ -68,20 +68,30 @@ class AlertMachine
     # Is the alert firing?
     def alert_state(firing)
       if firing != @alert_state
+        @alert_state = firing
         mail unless @last_mailed && @last_mailed > Time.now - 60*10 && firing
         @last_mailed = Time.now
       end
-      @alert_state = firing
     end
 
     def mail
-      last = @errors[-1]
-      ActionMailer::Base.mail(
-        :from => opts(:from),
-        :to => opts(:to),
-        :subject => "AlertMachine Failed: #{last.msg || last.parsed_caller.file_line}",
-        :body => @errors.collect {|e| e.log}.join("\n=============\n")
-      ).deliver
+      if @alert_state
+        last = @errors[-1]
+        @last_error_line = last.msg || last.parsed_caller.file_line
+        ActionMailer::Base.mail(
+          :from => opts(:from),
+          :to => opts(:to),
+          :subject => "AlertMachine Failed: #{@last_error_line}",
+          :body => @errors.collect {|e| e.log}.join("\n=============\n")
+        ).deliver
+      else
+        ActionMailer::Base.mail(
+          :from => opts(:from),
+          :to => opts(:to),
+          :subject => "AlertMachine Passed: #{@last_error_line}",
+          :body => "#{Caller.new(@caller).log}"
+        ).deliver
+      end
     end
 
     def opts(key, defaults = nil)
