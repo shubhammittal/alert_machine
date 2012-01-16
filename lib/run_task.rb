@@ -8,8 +8,13 @@ class AlertMachine
     end
 
     def schedule
-      @timer = EM::PeriodicTimer.new(interval) do
+      # Run with an interval of 1 second for the first time.
+      # After the first execution the interval gets set appropriately.
+      @timer = EM::PeriodicTimer.new([1, interval].min) do
         with_task do
+          # Reset the interval correctly the first time.
+          @first_time ||= @timer.interval = interval
+
           start = Time.now
           begin
             # The main call to the user-defined watcher function.
