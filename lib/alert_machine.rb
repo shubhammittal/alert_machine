@@ -57,14 +57,8 @@ class AlertMachine
       # Run a command on a set of machines.
       def self.run_command(machines, cmd)
         machines = [machines].flatten
-        require 'rye'
-        set = Rye::Set.new(machines.join(","), :parallel => true)
-        machines.each { |m| set.add_box(Rye::Box.new(m, AlertMachine.ssh_config.merge(:safe => false))) }
-        puts "[#{Time.now}] executing on #{machines}: #{cmd}"
-        res = set.execute(cmd).group_by {|ry| ry.box.hostname }.sort_by {|name, op| machines.index(name) }
-        res.each { |machine, op|
-          puts "[#{Time.now}] [#{machine}]\n#{op.join("\n")}\n"
-        }
+        @ssh ||= SshConnection.new
+        @ssh.run(machines, cmd)
       end
 
       private
@@ -170,4 +164,5 @@ end
 dname = File.dirname(__FILE__)
 require "#{dname}/process.rb"
 require "#{dname}/run_task.rb"
+require "#{dname}/ssh_connection.rb"
 require "#{dname}/rails_environment.rb"
