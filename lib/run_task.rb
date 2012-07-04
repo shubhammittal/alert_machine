@@ -121,7 +121,7 @@ class AlertMachine
       def log
         "[#{Time.now}] #{msg ? msg + "\n" : ""}" +
           "#{Caller.new(caller).log}" + "\n" +
-          "Sent from #{`hostname`}:#{Process.pid}"
+          "Sent from #{`hostname`}:#{::Process.pid}"
       end
 
       def parsed_caller
