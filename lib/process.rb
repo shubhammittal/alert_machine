@@ -48,7 +48,11 @@ class AlertMachine
       rescue Exception => e
         puts "Exception: #{e.to_s}"
         puts "#{e.backtrace.join("\n")}"
-        check_command_failed(machines, error_msg, caller)
+        unless e.is_a?(RunTask::AssertionFailure)
+          check_command_failed(machines, error_msg, caller)
+        else
+          raise e
+        end
       end
 
       def check_command_failed(machines, error_msg, caller)
