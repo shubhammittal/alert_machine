@@ -6,13 +6,17 @@ class AlertMachine
 
       def watch(machines, opts, caller)
         raise ArgumentError, "Must mention atleast one of (port, pid_file, grep)" unless
-          opts[:port] || opts[:pid_file] || opts[:grep]
+          opts[:port] || opts[:pid_file] || opts[:grep] || opts[:command]
           raise ArgumentError, "Must not be passed a block" if block_given?
 
         super(opts, caller) do
           check(:port, machines, opts, caller)
           check(:pid_file, machines, opts, caller)
           check(:grep, machines, opts, caller)
+
+          if opts[:command]
+            check_command(machines, opts[:command], "", "", caller)
+          end
         end
       end
 
