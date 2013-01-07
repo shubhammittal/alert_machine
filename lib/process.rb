@@ -53,7 +53,7 @@ class AlertMachine
         puts "Exception: #{e.to_s}"
         puts "#{e.backtrace.join("\n")}"
         unless e.is_a?(RunTask::AssertionFailure)
-          check_command_failed(machines, error_msg, caller)
+          check_command_failed(machines, error_msg + " with exception #{e.to_s}" , caller)
         else
           raise e
         end
