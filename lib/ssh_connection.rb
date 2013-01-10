@@ -24,6 +24,11 @@ class AlertMachine
       res.each { |machine, op|
         puts "[#{Time.now}] [#{machine}]\n#{op.join("\n")}\n"
       }
+    rescue Exception => e
+      puts "[#{Time.now}] Executing cmd on machines raised exception."
+      puts "#{hosts} => #{cmd}"
+      puts "#{e}"
+      puts "#{e.backtrace.join("\n")}"
     end
     
   end
