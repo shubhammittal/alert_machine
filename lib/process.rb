@@ -14,9 +14,8 @@ class AlertMachine
           check(:pid_file, machines, opts, caller)
           check(:grep, machines, opts, caller)
 
-          if opts[:command]
-            check_command(machines, opts[:command], "", "", caller)
-          end
+          check_command(machines, opts[:command], opts[:check_message].to_s,
+            opts[:error_message].to_s, caller) if opts[:command]
         end
       end
 
@@ -64,9 +63,9 @@ class AlertMachine
       end
 
       def check(entity, machines, opts, caller)
-        [opts[entity]].flatten.each { |val|
+        Array([opts[entity]]).flatten.each { |val|
           Process.send("check_#{entity}".to_sym, machines, val, caller)
-        } if opts[entity]
+        }
       end
 
       private
