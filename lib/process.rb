@@ -63,7 +63,7 @@ class AlertMachine
       end
 
       def check(entity, machines, opts, caller)
-        Array([opts[entity]]).flatten.each { |val|
+        Array(opts[entity]).flatten.each { |val|
           Process.send("check_#{entity}".to_sym, machines, val, caller)
         }
       end
