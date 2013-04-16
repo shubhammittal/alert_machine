@@ -50,15 +50,14 @@ class AlertMachine
       # Other usual options of watcher, mentioned above.
       #
       def self.watch_process(machines, opts = {})
-        machines = [machines].flatten
         Process.watch(machines, opts, caller)
       end
 
       # Run a command on a set of machines.
       def self.run_command(machines, cmd)
-        ms = [machines.is_a?(Proc) ? machines.call : machines].flatten
+        machines = [machines].flatten
         @ssh ||= SshConnection.new
-        @ssh.run(ms, cmd)
+        @ssh.run(machines, cmd)
       end
 
       private
