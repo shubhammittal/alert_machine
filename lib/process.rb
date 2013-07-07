@@ -45,7 +45,8 @@ class AlertMachine
         run_command(machines,
           "#{cmd} || echo BAD"
         ).each { |machine, output|
-          bad_machines << machine if output.join(" ").match(/BAD/)
+          o = output.join(" ")
+          bad_machines << machine if o.match(/BAD/) || o.match(/connection closed by remote host/i)
         }
         check_command_failed(bad_machines, error_msg, caller) unless
           bad_machines.empty?
