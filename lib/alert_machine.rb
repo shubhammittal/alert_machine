@@ -117,7 +117,7 @@ class AlertMachine
     end
 
     def log
-      "#{caller[0]}\n" +
+      caller.join("\n") + "\n\n\n" +
         log_source_file.to_s
     end
     
