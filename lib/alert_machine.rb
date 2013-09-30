@@ -56,8 +56,14 @@ class AlertMachine
       # Run a command on a set of machines.
       def self.run_command(machines, cmd)
         machines = [machines].flatten
+        ssh_connection.run(machines, cmd)
+      end
+
+      def self.ssh_connection
         @ssh ||= SshConnection.new
-        @ssh.run(machines, cmd)
+      end
+      def self.reset_ssh_connection
+        @ssh = nil
       end
 
       private

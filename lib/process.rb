@@ -48,8 +48,7 @@ class AlertMachine
           o = output.join(" ")
           bad_machines << machine if o.match(/BAD/) || o.match(/connection closed by remote host/i)
         }
-        check_command_failed(bad_machines, error_msg, caller) unless
-          bad_machines.empty?
+        check_command_failed(bad_machines, error_msg, caller) unless bad_machines.empty?
       rescue Exception => e
         puts "Exception: #{e.to_s}"
         puts "#{e.backtrace.join("\n")}"
@@ -61,6 +60,7 @@ class AlertMachine
       end
 
       def check_command_failed(machines, error_msg, caller)
+        Watcher.reset_ssh_connection
         assert false, error_msg % machines.join(", "), caller
       end
 
