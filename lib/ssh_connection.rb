@@ -1,8 +1,16 @@
+require 'rye'
+class Rye::Box
+  def run_command_with_timeout(*args, &blk)
+    Timeout::timeout(15) { run_command_without_timeout(*args, &blk) }
+  end
+  alias_method :run_command_without_timeout, :run_command
+  alias_method :run_command, :run_command_with_timeout
+end
+
 class AlertMachine
   class SshConnection
 
     def initialize
-      require 'rye'
       @connections = {}
     end
 
