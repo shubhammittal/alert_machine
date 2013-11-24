@@ -15,8 +15,10 @@ class AlertMachine
     end
 
     def box(host)
-      @connections[host] ||= Rye::Box.new(host,
-        AlertMachine.ssh_config.merge(:safe => false))
+      @connections[host] = nil if (@connections[host] || [0])[0] < 1.hour.ago.to_i
+      @connections[host] ||= [Time.now.to_i,
+        Rye::Box.new(host, AlertMachine.ssh_config.merge(:safe => false))]
+      @connections[host][1]
     end
 
     def set(hosts)
