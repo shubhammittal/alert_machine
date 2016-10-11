@@ -75,23 +75,20 @@ class AlertMachine
     end
 
     def mail
-      if @alert_state
+      mail_opts = if @alert_state
         last = @errors[-1]
         @last_error_line = last.msg || last.parsed_caller.file_line
-        ActionMailer::Base.mail(
-          :from => opts(:from),
-          :to => opts(:to),
-          :subject => "AlertMachine Failed: #{@last_error_line}",
-          :body => @errors.collect {|e| e.log}.join("\n=============\n")
-        ).deliver
+        {
+          subject: "AlertMachine Failed: #{@last_error_line}",
+          body: @errors.collect {|e| e.log}.join("\n=============\n")
+        }
       else
-        ActionMailer::Base.mail(
-          :from => opts(:from),
-          :to => opts(:to),
-          :subject => "AlertMachine Passed: #{@last_error_line}",
-          :body => "#{Caller.new(@caller).log}"
-        ).deliver
-      end
+        {
+          subject: "AlertMachine Passed: #{@last_error_line}",
+          body: "#{Caller.new(@caller).log}"
+        }
+      end.merge(from: opts(:from), to: opts(:to))
+      eval(opts(:mailer_class, "ActionMailer::Base")).mail(mail_opts).deliver
     end
 
     def opts(key, defaults = nil)
